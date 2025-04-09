@@ -304,7 +304,7 @@ namespace NinjaTrader.NinjaScript.Indicators
             var line = Draw.Line(this, "Line" + CurrentBar, false, startTime, pocPrice, endTime, pocPrice, Brushes.Yellow, DashStyleHelper.Solid, 2);
             if (line != null)
             {
-                line.ZOrder = -1;
+                line.ZOrder = 1;
             }
         }
 
