@@ -3,7 +3,6 @@ using NinjaTrader.Data;
 using NinjaTrader.Gui;
 using NinjaTrader.Gui.Chart;
 using NinjaTrader.NinjaScript.BarsTypes;
-using NinjaTrader.NinjaScript.DrawingTools;
 using NinjaTrader.NinjaScript.Indicators;
 using System;
 using System.ComponentModel;
@@ -14,6 +13,15 @@ using System.Xml.Serialization;
 
 namespace NinjaTrader.NinjaScript.Indicators
 {
+    public enum BarTypeOptions
+    {
+        Minute,
+        Range,
+        Second,
+        Tick,
+        Volume
+    }
+
     public enum TableDisplayModeType
     {
         None,
@@ -28,10 +36,10 @@ namespace NinjaTrader.NinjaScript.Indicators
         public const string GROUP_NAME_DATA_BAR = "3. Data Bar";
         public const string GROUP_NAME_TABLE = "4. Table";
 
-        private VolumetricBarsType volumetricBars;
-        private int volumetricBarsIndex = -1;
-        private SharpDX.Direct2D1.RenderTarget lastRenderTarget;
-        private SharpDX.DirectWrite.TextFormat textFormat;
+        private VolumetricBarsType _volumetricBars;
+        private int _volumetricBarsIndex = -1;
+        private SharpDX.Direct2D1.RenderTarget _lastRenderTarget;
+        private SharpDX.DirectWrite.TextFormat _textFormat;
 
         private Brush _bullBarNegDeltaBrush;
         private Brush _bearBarPosDeltaColorBrush;
@@ -43,19 +51,7 @@ namespace NinjaTrader.NinjaScript.Indicators
         private SharpDX.Direct2D1.SolidColorBrush _volumeTextBrush;
         private SharpDX.Direct2D1.SolidColorBrush _minDeltaTextBrush;
         private SharpDX.Direct2D1.SolidColorBrush _maxDeltaTextBrush;
-
-        // Fields to track previous property values
-        private float previousTextSize;
-        private Brush previousBullBarNegDeltaColor;
-        private Brush previousBearBarPosDeltaColor;
-        private Brush previousDeltaBarOutlineColor;
-        private Brush previousTableBgColor;
-        private Brush previousTableLabelColor;
-        private Brush previousPositiveTextColor;
-        private Brush previousNegativeTextColor;
-        private Brush previousVolumeTextColor;
-        private Brush previousMinDeltaTextColor;
-        private Brush previousMaxDeltaTextColor;
+        private SharpDX.Direct2D1.SolidColorBrush _pocBrush;
 
         #region Properties
 
@@ -68,7 +64,7 @@ namespace NinjaTrader.NinjaScript.Indicators
 
         #endregion
 
-        #region  Order Flow Stats Properties
+        #region Order Flow Stats Properties
 
         [Range(1, int.MaxValue), NinjaScriptProperty]
         [Display(Name = "Volumetric Period", Description = "Volumetric data series period", GroupName = GROUP_NAME_ORDER_FLOW_STATS, Order = 0)]
@@ -76,7 +72,7 @@ namespace NinjaTrader.NinjaScript.Indicators
 
         [NinjaScriptProperty]
         [Display(Name = "Volumetric Bars Type", Description = "The type of bars for the volumetric data series", GroupName = GROUP_NAME_ORDER_FLOW_STATS, Order = 1)]
-        public BarsPeriodType VolumetricBarsType { get; set; }
+        public BarTypeOptions VolumetricBarsType { get; set; }
 
         [Range(1, int.MaxValue), NinjaScriptProperty]
         [Display(Name = "Ticks Per Level", Description = "The ticks per level", GroupName = GROUP_NAME_ORDER_FLOW_STATS, Order = 2)]
@@ -91,31 +87,42 @@ namespace NinjaTrader.NinjaScript.Indicators
         #region Data Bar Properties
 
         [NinjaScriptProperty]
+        [Display(Name = "Show Price Delta Bar", Description = "Show the bar color change for price delta divergence.", GroupName = GROUP_NAME_DATA_BAR, Order = 0)]
+        public bool ShowPriceDeltaBar { get; set; }
+
+        [NinjaScriptProperty]
         [XmlIgnore]
-        [Display(Name = "Bull Bar Neg Delta Color", Description = "The color for a bullish bar and negative delta.", GroupName = GROUP_NAME_DATA_BAR, Order = 0)]
+        [Display(Name = "Bull Bar Neg Delta Color", Description = "The color for a bullish bar and negative delta.", GroupName = GROUP_NAME_DATA_BAR, Order = 1)]
         public Brush BullBarNegDeltaColor { get; set; }
 
         [NinjaScriptProperty]
         [XmlIgnore]
-        [Display(Name = "Bear Bar Pos Delta Color", Description = "The color for a bearish bar and positive delta.", GroupName = GROUP_NAME_DATA_BAR, Order = 1)]
+        [Display(Name = "Bear Bar Pos Delta Color", Description = "The color for a bearish bar and positive delta.", GroupName = GROUP_NAME_DATA_BAR, Order = 2)]
         public Brush BearBarPosDeltaColor { get; set; }
 
         [NinjaScriptProperty]
         [XmlIgnore]
-        [Display(Name = "Bull Bear Bar Outline Color", Description = "The bar outline color for the bull bear delta bar.", GroupName = GROUP_NAME_DATA_BAR, Order = 2)]
+        [Display(Name = "Bull Bear Bar Outline Color", Description = "The bar outline color for the bull bear delta bar.", GroupName = GROUP_NAME_DATA_BAR, Order = 3)]
         public Brush DeltaBarOutlineColor { get; set; }
+
+        [NinjaScriptProperty]
+        [Display(Name = "Show Point of Control", Description = "Show point of control.", GroupName = GROUP_NAME_DATA_BAR, Order = 4)]
+        public bool ShowPoc { get; set; }
+
+        [NinjaScriptProperty]
+        [XmlIgnore]
+        [Display(Name = "Point of Control Color", Description = "The point of control color.", GroupName = GROUP_NAME_DATA_BAR, Order = 5)]
+        public Brush PocColor { get; set; }
 
         #endregion
 
         #region Table Properties
 
         [NinjaScriptProperty]
-        [XmlIgnore]
         [Display(Name = "Table Display Mode", Description = "How to display the table", GroupName = GROUP_NAME_TABLE, Order = 0)]
         public TableDisplayModeType TableDisplayMode { get; set; }
 
         [NinjaScriptProperty]
-        [XmlIgnore]
         [Display(Name = "Max Table Columns", Description = "Max table columns to show", GroupName = GROUP_NAME_TABLE, Order = 1)]
         public int MaxTableColumns { get; set; }
 
@@ -168,6 +175,7 @@ namespace NinjaTrader.NinjaScript.Indicators
         [Browsable(false)] public string VolumeTextColorSerialize { get => Serialize.BrushToString(VolumeTextColor); set => VolumeTextColor = Serialize.StringToBrush(value); }
         [Browsable(false)] public string MinDeltaTextColorSerialize { get => Serialize.BrushToString(MinDeltaTextColor); set => MinDeltaTextColor = Serialize.StringToBrush(value); }
         [Browsable(false)] public string MaxDeltaTextColorSerialize { get => Serialize.BrushToString(MaxDeltaTextColor); set => MaxDeltaTextColor = Serialize.StringToBrush(value); }
+        [Browsable(false)] public string PocColorSerialize { get => Serialize.BrushToString(PocColor); set => PocColor = Serialize.StringToBrush(value); }
 
         #endregion
 
@@ -198,12 +206,14 @@ namespace NinjaTrader.NinjaScript.Indicators
                 IsSuspendedWhileInactive = true;
 
                 VolumetricPeriod = 5;
-                VolumetricBarsType = BarsPeriodType.Minute;
+                VolumetricBarsType = BarTypeOptions.Minute;
                 TicksPerLevel = 5;
                 TextSize = 11;
                 TableDisplayMode = TableDisplayModeType.PerBar;
                 MaxTableColumns = 30;
 
+                ShowPriceDeltaBar = true;
+                ShowPoc = true;
                 BullBarNegDeltaColor = Brushes.DarkTurquoise;
                 BearBarPosDeltaColor = Brushes.DarkOrange;
                 DeltaBarOutlineColor = Brushes.SlateGray;
@@ -214,28 +224,41 @@ namespace NinjaTrader.NinjaScript.Indicators
                 VolumeTextColor = Brushes.LightGray;
                 MinDeltaTextColor = Brushes.DarkOrange;
                 MaxDeltaTextColor = Brushes.DarkTurquoise;
-
-                previousTextSize = TextSize;
-                previousBullBarNegDeltaColor = BullBarNegDeltaColor;
-                previousBearBarPosDeltaColor = BearBarPosDeltaColor;
-                previousDeltaBarOutlineColor = DeltaBarOutlineColor;
-                previousTableBgColor = TableBgColor;
-                previousTableLabelColor = TableLabelColor;
-                previousPositiveTextColor = PositiveTextColor;
-                previousNegativeTextColor = NegativeTextColor;
-                previousVolumeTextColor = VolumeTextColor;
-                previousMinDeltaTextColor = MinDeltaTextColor;
-                previousMaxDeltaTextColor = MaxDeltaTextColor;
+                PocColor = Brushes.Yellow;
             }
             else if (State == State.Configure)
             {
-                AddVolumetric(Instrument.FullName, VolumetricBarsType, VolumetricPeriod, VolumetricDeltaType.BidAsk, TicksPerLevel);
+                BarsPeriodType barsPeriodType;
+
+                switch (VolumetricBarsType)
+                {
+                    case BarTypeOptions.Minute:
+                        barsPeriodType = BarsPeriodType.Minute;
+                        break;
+                    case BarTypeOptions.Range:
+                        barsPeriodType = BarsPeriodType.Range;
+                        break;
+                    case BarTypeOptions.Second:
+                        barsPeriodType = BarsPeriodType.Second;
+                        break;
+                    case BarTypeOptions.Tick:
+                        barsPeriodType = BarsPeriodType.Tick;
+                        break;
+                    case BarTypeOptions.Volume:
+                        barsPeriodType = BarsPeriodType.Volume;
+                        break;
+                    default:
+                        barsPeriodType = BarsPeriodType.Minute;
+                        break;
+                }
+
+                AddVolumetric(Instrument.FullName, barsPeriodType, VolumetricPeriod, VolumetricDeltaType.BidAsk, TicksPerLevel);
             }
             else if (State == State.DataLoaded)
             {
-                volumetricBarsIndex = 1;
-                volumetricBars = BarsArray[volumetricBarsIndex].BarsType as VolumetricBarsType;
-                textFormat = new SharpDX.DirectWrite.TextFormat(Core.Globals.DirectWriteFactory, "Arial", TextSize);
+                _volumetricBarsIndex = 1;
+                _volumetricBars = BarsArray[_volumetricBarsIndex].BarsType as VolumetricBarsType;
+                _textFormat = new SharpDX.DirectWrite.TextFormat(Core.Globals.DirectWriteFactory, "Arial", TextSize);
 
                 _bullBarNegDeltaBrush = BullBarNegDeltaColor;
                 _bearBarPosDeltaColorBrush = BearBarPosDeltaColor;
@@ -243,35 +266,18 @@ namespace NinjaTrader.NinjaScript.Indicators
             }
             else if (State == State.Finalized)
             {
-                if (textFormat != null) { textFormat.Dispose(); textFormat = null; }
+                if (_textFormat != null) { _textFormat.Dispose(); _textFormat = null; }
                 DisposeBrushes();
             }
         }
 
         protected override void OnBarUpdate()
         {
-            if (BarsInProgress != 0 || volumetricBars == null || CurrentBar < 1)
+            if (BarsInProgress != 0 || _volumetricBars == null || CurrentBar < 1 || !ShowPriceDeltaBar)
                 return;
 
-            // Update bar brushes if colors have changed
-            if (!ReferenceEquals(BullBarNegDeltaColor, previousBullBarNegDeltaColor))
-            {
-                _bullBarNegDeltaBrush = BullBarNegDeltaColor;
-                previousBullBarNegDeltaColor = BullBarNegDeltaColor;
-            }
-            if (!ReferenceEquals(BearBarPosDeltaColor, previousBearBarPosDeltaColor))
-            {
-                _bearBarPosDeltaColorBrush = BearBarPosDeltaColor;
-                previousBearBarPosDeltaColor = BearBarPosDeltaColor;
-            }
-            if (!ReferenceEquals(DeltaBarOutlineColor, previousDeltaBarOutlineColor))
-            {
-                _deltaBarOutlineColorBrush = DeltaBarOutlineColor;
-                previousDeltaBarOutlineColor = DeltaBarOutlineColor;
-            }
-
             bool isPositiveBar = Close[0] > Open[0];
-            bool isDeltaNegative = volumetricBars.Volumes[CurrentBar].BarDelta < 0;
+            bool isDeltaNegative = _volumetricBars.Volumes[CurrentBar].BarDelta < 0;
 
             if (isPositiveBar && isDeltaNegative)
             {
@@ -288,52 +294,17 @@ namespace NinjaTrader.NinjaScript.Indicators
                 BarBrush = null;
                 CandleOutlineBrush = null;
             }
-
-            double pocPrice = 0;
-            volumetricBars.Volumes[CurrentBar].GetMaximumVolume(null, out pocPrice);
-
-            TimeSpan halfDuration = Bars.IsFirstBarOfSession
-                ? TimeSpan.FromMinutes(VolumetricPeriod / 2.0)
-                : TimeSpan.FromTicks((Time[0] - Time[1]).Ticks / 2);
-            double scaleFactor = 0.6;
-            halfDuration = TimeSpan.FromTicks((long)(halfDuration.Ticks * scaleFactor));
-
-            DateTime startTime = Time[0] - halfDuration;
-            DateTime endTime = Time[0] + halfDuration;
-
-            var line = Draw.Line(this, "Line" + CurrentBar, false, startTime, pocPrice, endTime, pocPrice, Brushes.Yellow, DashStyleHelper.Solid, 2);
-            if (line != null)
-            {
-                line.ZOrder = 100;
-            }
         }
 
         protected override void OnRender(ChartControl chartControl, ChartScale chartScale)
         {
             base.OnRender(chartControl, chartScale);
 
-            if (volumetricBars == null || Bars == null || TableDisplayMode == TableDisplayModeType.None || RenderTarget == null)
+            if (_volumetricBars == null || Bars == null || RenderTarget == null)
                 return;
 
-            // Check for changes in TextSize
-            if (TextSize != previousTextSize)
-            {
-                if (textFormat != null) textFormat.Dispose();
-                textFormat = new SharpDX.DirectWrite.TextFormat(Core.Globals.DirectWriteFactory, "Arial", TextSize);
-                previousTextSize = TextSize;
-            }
-
-            // Check for changes in table-related colors or RenderTarget
-            bool brushesNeedUpdate = lastRenderTarget != RenderTarget ||
-                !ReferenceEquals(TableBgColor, previousTableBgColor) ||
-                !ReferenceEquals(TableLabelColor, previousTableLabelColor) ||
-                !ReferenceEquals(PositiveTextColor, previousPositiveTextColor) ||
-                !ReferenceEquals(NegativeTextColor, previousNegativeTextColor) ||
-                !ReferenceEquals(VolumeTextColor, previousVolumeTextColor) ||
-                !ReferenceEquals(MinDeltaTextColor, previousMinDeltaTextColor) ||
-                !ReferenceEquals(MaxDeltaTextColor, previousMaxDeltaTextColor);
-
-            if (brushesNeedUpdate)
+            // Recreate table brushes only if RenderTarget changes
+            if (_lastRenderTarget != RenderTarget)
             {
                 DisposeBrushes();
                 _tableBgBrush = new SharpDX.Direct2D1.SolidColorBrush(RenderTarget, ToDxColor(TableBgColor));
@@ -343,17 +314,13 @@ namespace NinjaTrader.NinjaScript.Indicators
                 _volumeTextBrush = new SharpDX.Direct2D1.SolidColorBrush(RenderTarget, ToDxColor(VolumeTextColor));
                 _minDeltaTextBrush = new SharpDX.Direct2D1.SolidColorBrush(RenderTarget, ToDxColor(MinDeltaTextColor));
                 _maxDeltaTextBrush = new SharpDX.Direct2D1.SolidColorBrush(RenderTarget, ToDxColor(MaxDeltaTextColor));
-
-                // Update previous values
-                previousTableBgColor = TableBgColor;
-                previousTableLabelColor = TableLabelColor;
-                previousPositiveTextColor = PositiveTextColor;
-                previousNegativeTextColor = NegativeTextColor;
-                previousVolumeTextColor = VolumeTextColor;
-                previousMinDeltaTextColor = MinDeltaTextColor;
-                previousMaxDeltaTextColor = MaxDeltaTextColor;
-                lastRenderTarget = RenderTarget;
+                _pocBrush = new SharpDX.Direct2D1.SolidColorBrush(RenderTarget, ToDxColor(PocColor));
+                _lastRenderTarget = RenderTarget;
             }
+
+            RenderPocLines(chartControl, chartScale);
+
+            if (TableDisplayMode == TableDisplayModeType.None) return;
 
             // Table layout parameters
             float rowHeight = 16f;
@@ -403,7 +370,7 @@ namespace NinjaTrader.NinjaScript.Indicators
             for (int i = 0; i < numRows; i++)
             {
                 SharpDX.RectangleF labelRect = new SharpDX.RectangleF(labelX, tableTop + i * rowHeight, dataStartX - labelX, rowHeight);
-                RenderTarget.DrawText(labels[i], textFormat, labelRect, _tableLabelBrush);
+                RenderTarget.DrawText(labels[i], _textFormat, labelRect, _tableLabelBrush);
             }
         }
 
@@ -414,33 +381,33 @@ namespace NinjaTrader.NinjaScript.Indicators
             {
                 float x = dataStartX;
 
-                double volume = volumetricBars.Volumes[idx].TotalVolume;
-                double cumulativeDelta = volumetricBars.Volumes[idx].CumulativeDelta;
-                double delta = volumetricBars.Volumes[idx].BarDelta;
-                double minDelta = volumetricBars.Volumes[idx].MinSeenDelta;
-                double maxDelta = volumetricBars.Volumes[idx].MaxSeenDelta;
+                double volume = _volumetricBars.Volumes[idx].TotalVolume;
+                double cumulativeDelta = _volumetricBars.Volumes[idx].CumulativeDelta;
+                double delta = _volumetricBars.Volumes[idx].BarDelta;
+                double minDelta = _volumetricBars.Volumes[idx].MinSeenDelta;
+                double maxDelta = _volumetricBars.Volumes[idx].MaxSeenDelta;
 
                 string[] texts = new[]
                 {
-                volume.ToString("N0"),
-                cumulativeDelta.ToString("N0"),
-                delta.ToString("N0"),
-                minDelta.ToString("N0"),
-                maxDelta.ToString("N0")
-            };
+                    volume.ToString("N0"),
+                    cumulativeDelta.ToString("N0"),
+                    delta.ToString("N0"),
+                    minDelta.ToString("N0"),
+                    maxDelta.ToString("N0")
+                };
                 SharpDX.Direct2D1.SolidColorBrush[] brushes = new[]
                 {
-                _volumeTextBrush,
-                cumulativeDelta >= 0 ? _positiveTextBrush : _negativeTextBrush,
-                delta >= 0 ? _positiveTextBrush : _negativeTextBrush,
-                _minDeltaTextBrush,
-                _maxDeltaTextBrush
-            };
+                    _volumeTextBrush,
+                    cumulativeDelta >= 0 ? _positiveTextBrush : _negativeTextBrush,
+                    delta >= 0 ? _positiveTextBrush : _negativeTextBrush,
+                    _minDeltaTextBrush,
+                    _maxDeltaTextBrush
+                };
 
                 for (int i = 0; i < texts.Length; i++)
                 {
-                    SharpDX.RectangleF rect = new SharpDX.RectangleF(x, tableTop + i * rowHeight, 1000f, rowHeight); // Large width to ensure text fits
-                    RenderTarget.DrawText(texts[i], textFormat, rect, brushes[i]);
+                    SharpDX.RectangleF rect = new SharpDX.RectangleF(x, tableTop + i * rowHeight, 1000f, rowHeight);
+                    RenderTarget.DrawText(texts[i], _textFormat, rect, brushes[i]);
                 }
             }
         }
@@ -451,11 +418,11 @@ namespace NinjaTrader.NinjaScript.Indicators
             int idx = ChartBars.ToIndex;
             if (idx >= 0 && idx < Bars.Count)
             {
-                double volume = volumetricBars.Volumes[idx].TotalVolume;
-                double cumulativeDelta = volumetricBars.Volumes[idx].CumulativeDelta;
-                double delta = volumetricBars.Volumes[idx].BarDelta;
-                double minDelta = volumetricBars.Volumes[idx].MinSeenDelta;
-                double maxDelta = volumetricBars.Volumes[idx].MaxSeenDelta;
+                double volume = _volumetricBars.Volumes[idx].TotalVolume;
+                double cumulativeDelta = _volumetricBars.Volumes[idx].CumulativeDelta;
+                double delta = _volumetricBars.Volumes[idx].BarDelta;
+                double minDelta = _volumetricBars.Volumes[idx].MinSeenDelta;
+                double maxDelta = _volumetricBars.Volumes[idx].MaxSeenDelta;
 
                 string[] texts = new[]
                 {
@@ -466,11 +433,10 @@ namespace NinjaTrader.NinjaScript.Indicators
                     maxDelta.ToString("N0")
                 };
 
-                // Measure the width of each text and find the maximum
                 for (int i = 0; i < texts.Length; i++)
                 {
                     SharpDX.DirectWrite.TextLayout textLayout = new SharpDX.DirectWrite.TextLayout(
-                        Core.Globals.DirectWriteFactory, texts[i], textFormat, 1000f, 16f);
+                        Core.Globals.DirectWriteFactory, texts[i], _textFormat, 1000f, 16f);
                     float textWidth = textLayout.Metrics.Width;
                     maxTextWidth = Math.Max(maxTextWidth, textWidth);
                     textLayout.Dispose();
@@ -498,11 +464,11 @@ namespace NinjaTrader.NinjaScript.Indicators
 
         private void RenderBarData(int idx, float x, float width, float tableTop, float rowHeight)
         {
-            double volume = volumetricBars.Volumes[idx].TotalVolume;
-            double cumulativeDelta = volumetricBars.Volumes[idx].CumulativeDelta;
-            double delta = volumetricBars.Volumes[idx].BarDelta;
-            double minDelta = volumetricBars.Volumes[idx].MinSeenDelta;
-            double maxDelta = volumetricBars.Volumes[idx].MaxSeenDelta;
+            double volume = _volumetricBars.Volumes[idx].TotalVolume;
+            double cumulativeDelta = _volumetricBars.Volumes[idx].CumulativeDelta;
+            double delta = _volumetricBars.Volumes[idx].BarDelta;
+            double minDelta = _volumetricBars.Volumes[idx].MinSeenDelta;
+            double maxDelta = _volumetricBars.Volumes[idx].MaxSeenDelta;
 
             string[] texts = new[]
             {
@@ -524,7 +490,31 @@ namespace NinjaTrader.NinjaScript.Indicators
             for (int i = 0; i < texts.Length; i++)
             {
                 SharpDX.RectangleF rect = new SharpDX.RectangleF(x, tableTop + i * rowHeight, width, rowHeight);
-                RenderTarget.DrawText(texts[i], textFormat, rect, brushes[i]);
+                RenderTarget.DrawText(texts[i], _textFormat, rect, brushes[i]);
+            }
+        }
+
+        private void RenderPocLines(ChartControl chartControl, ChartScale chartScale)
+        {
+            if (!ShowPoc) return;
+
+            for (int idx = ChartBars.FromIndex; idx <= ChartBars.ToIndex; idx++)
+            {
+                if (idx < 0 || idx >= Bars.Count) continue;
+
+                float barCenterX = chartControl.GetXByBarIndex(ChartBars, idx);
+                float lineWidth = (float)chartControl.BarWidth * 2f;
+                float halfWidth = lineWidth / 2f;
+                float xStart = barCenterX - halfWidth;
+                float xEnd = barCenterX + halfWidth;
+
+                double pocPrice = 0;
+                _volumetricBars.Volumes[idx].GetMaximumVolume(null, out pocPrice);
+                float y = chartScale.GetYByValue(pocPrice);
+
+                SharpDX.Vector2 point1 = new SharpDX.Vector2(xStart, y);
+                SharpDX.Vector2 point2 = new SharpDX.Vector2(xEnd, y);
+                RenderTarget.DrawLine(point1, point2, _pocBrush, 2);
             }
         }
 
@@ -537,6 +527,7 @@ namespace NinjaTrader.NinjaScript.Indicators
             _volumeTextBrush?.Dispose(); _volumeTextBrush = null;
             _minDeltaTextBrush?.Dispose(); _minDeltaTextBrush = null;
             _maxDeltaTextBrush?.Dispose(); _maxDeltaTextBrush = null;
+            _pocBrush?.Dispose(); _pocBrush = null;
         }
     }
 }
@@ -545,55 +536,55 @@ namespace NinjaTrader.NinjaScript.Indicators
 
 namespace NinjaTrader.NinjaScript.Indicators
 {
-    public partial class Indicator : NinjaTrader.Gui.NinjaScript.IndicatorRenderBase
-    {
-        private OrderFlowStats[] cacheOrderFlowStats;
-        public OrderFlowStats OrderFlowStats(int volumetricPeriod, BarsPeriodType volumetricBarsType, int ticksPerLevel, float textSize, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
-        {
-            return OrderFlowStats(Input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
-        }
+	public partial class Indicator : NinjaTrader.Gui.NinjaScript.IndicatorRenderBase
+	{
+		private OrderFlowStats[] cacheOrderFlowStats;
+		public OrderFlowStats OrderFlowStats(int volumetricPeriod, BarTypeOptions volumetricBarsType, int ticksPerLevel, float textSize, bool showPriceDeltaBar, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, bool showPoc, Brush pocColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
+		{
+			return OrderFlowStats(Input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, showPriceDeltaBar, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, showPoc, pocColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
+		}
 
-        public OrderFlowStats OrderFlowStats(ISeries<double> input, int volumetricPeriod, BarsPeriodType volumetricBarsType, int ticksPerLevel, float textSize, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
-        {
-            if (cacheOrderFlowStats != null)
-                for (int idx = 0; idx < cacheOrderFlowStats.Length; idx++)
-                    if (cacheOrderFlowStats[idx] != null && cacheOrderFlowStats[idx].VolumetricPeriod == volumetricPeriod && cacheOrderFlowStats[idx].VolumetricBarsType == volumetricBarsType && cacheOrderFlowStats[idx].TicksPerLevel == ticksPerLevel && cacheOrderFlowStats[idx].TextSize == textSize && cacheOrderFlowStats[idx].BullBarNegDeltaColor == bullBarNegDeltaColor && cacheOrderFlowStats[idx].BearBarPosDeltaColor == bearBarPosDeltaColor && cacheOrderFlowStats[idx].DeltaBarOutlineColor == deltaBarOutlineColor && cacheOrderFlowStats[idx].TableDisplayMode == tableDisplayMode && cacheOrderFlowStats[idx].MaxTableColumns == maxTableColumns && cacheOrderFlowStats[idx].TableBgColor == tableBgColor && cacheOrderFlowStats[idx].TableLabelColor == tableLabelColor && cacheOrderFlowStats[idx].PositiveTextColor == positiveTextColor && cacheOrderFlowStats[idx].NegativeTextColor == negativeTextColor && cacheOrderFlowStats[idx].VolumeTextColor == volumeTextColor && cacheOrderFlowStats[idx].MinDeltaTextColor == minDeltaTextColor && cacheOrderFlowStats[idx].MaxDeltaTextColor == maxDeltaTextColor && cacheOrderFlowStats[idx].EqualsInput(input))
-                        return cacheOrderFlowStats[idx];
-            return CacheIndicator<OrderFlowStats>(new OrderFlowStats() { VolumetricPeriod = volumetricPeriod, VolumetricBarsType = volumetricBarsType, TicksPerLevel = ticksPerLevel, TextSize = textSize, BullBarNegDeltaColor = bullBarNegDeltaColor, BearBarPosDeltaColor = bearBarPosDeltaColor, DeltaBarOutlineColor = deltaBarOutlineColor, TableDisplayMode = tableDisplayMode, MaxTableColumns = maxTableColumns, TableBgColor = tableBgColor, TableLabelColor = tableLabelColor, PositiveTextColor = positiveTextColor, NegativeTextColor = negativeTextColor, VolumeTextColor = volumeTextColor, MinDeltaTextColor = minDeltaTextColor, MaxDeltaTextColor = maxDeltaTextColor }, input, ref cacheOrderFlowStats);
-        }
-    }
+		public OrderFlowStats OrderFlowStats(ISeries<double> input, int volumetricPeriod, BarTypeOptions volumetricBarsType, int ticksPerLevel, float textSize, bool showPriceDeltaBar, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, bool showPoc, Brush pocColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
+		{
+			if (cacheOrderFlowStats != null)
+				for (int idx = 0; idx < cacheOrderFlowStats.Length; idx++)
+					if (cacheOrderFlowStats[idx] != null && cacheOrderFlowStats[idx].VolumetricPeriod == volumetricPeriod && cacheOrderFlowStats[idx].VolumetricBarsType == volumetricBarsType && cacheOrderFlowStats[idx].TicksPerLevel == ticksPerLevel && cacheOrderFlowStats[idx].TextSize == textSize && cacheOrderFlowStats[idx].ShowPriceDeltaBar == showPriceDeltaBar && cacheOrderFlowStats[idx].BullBarNegDeltaColor == bullBarNegDeltaColor && cacheOrderFlowStats[idx].BearBarPosDeltaColor == bearBarPosDeltaColor && cacheOrderFlowStats[idx].DeltaBarOutlineColor == deltaBarOutlineColor && cacheOrderFlowStats[idx].ShowPoc == showPoc && cacheOrderFlowStats[idx].PocColor == pocColor && cacheOrderFlowStats[idx].TableDisplayMode == tableDisplayMode && cacheOrderFlowStats[idx].MaxTableColumns == maxTableColumns && cacheOrderFlowStats[idx].TableBgColor == tableBgColor && cacheOrderFlowStats[idx].TableLabelColor == tableLabelColor && cacheOrderFlowStats[idx].PositiveTextColor == positiveTextColor && cacheOrderFlowStats[idx].NegativeTextColor == negativeTextColor && cacheOrderFlowStats[idx].VolumeTextColor == volumeTextColor && cacheOrderFlowStats[idx].MinDeltaTextColor == minDeltaTextColor && cacheOrderFlowStats[idx].MaxDeltaTextColor == maxDeltaTextColor && cacheOrderFlowStats[idx].EqualsInput(input))
+						return cacheOrderFlowStats[idx];
+			return CacheIndicator<OrderFlowStats>(new OrderFlowStats(){ VolumetricPeriod = volumetricPeriod, VolumetricBarsType = volumetricBarsType, TicksPerLevel = ticksPerLevel, TextSize = textSize, ShowPriceDeltaBar = showPriceDeltaBar, BullBarNegDeltaColor = bullBarNegDeltaColor, BearBarPosDeltaColor = bearBarPosDeltaColor, DeltaBarOutlineColor = deltaBarOutlineColor, ShowPoc = showPoc, PocColor = pocColor, TableDisplayMode = tableDisplayMode, MaxTableColumns = maxTableColumns, TableBgColor = tableBgColor, TableLabelColor = tableLabelColor, PositiveTextColor = positiveTextColor, NegativeTextColor = negativeTextColor, VolumeTextColor = volumeTextColor, MinDeltaTextColor = minDeltaTextColor, MaxDeltaTextColor = maxDeltaTextColor }, input, ref cacheOrderFlowStats);
+		}
+	}
 }
 
 namespace NinjaTrader.NinjaScript.MarketAnalyzerColumns
 {
-    public partial class MarketAnalyzerColumn : MarketAnalyzerColumnBase
-    {
-        public Indicators.OrderFlowStats OrderFlowStats(int volumetricPeriod, BarsPeriodType volumetricBarsType, int ticksPerLevel, float textSize, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
-        {
-            return indicator.OrderFlowStats(Input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
-        }
+	public partial class MarketAnalyzerColumn : MarketAnalyzerColumnBase
+	{
+		public Indicators.OrderFlowStats OrderFlowStats(int volumetricPeriod, BarTypeOptions volumetricBarsType, int ticksPerLevel, float textSize, bool showPriceDeltaBar, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, bool showPoc, Brush pocColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
+		{
+			return indicator.OrderFlowStats(Input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, showPriceDeltaBar, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, showPoc, pocColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
+		}
 
-        public Indicators.OrderFlowStats OrderFlowStats(ISeries<double> input, int volumetricPeriod, BarsPeriodType volumetricBarsType, int ticksPerLevel, float textSize, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
-        {
-            return indicator.OrderFlowStats(input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
-        }
-    }
+		public Indicators.OrderFlowStats OrderFlowStats(ISeries<double> input , int volumetricPeriod, BarTypeOptions volumetricBarsType, int ticksPerLevel, float textSize, bool showPriceDeltaBar, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, bool showPoc, Brush pocColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
+		{
+			return indicator.OrderFlowStats(input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, showPriceDeltaBar, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, showPoc, pocColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
+		}
+	}
 }
 
 namespace NinjaTrader.NinjaScript.Strategies
 {
-    public partial class Strategy : NinjaTrader.Gui.NinjaScript.StrategyRenderBase
-    {
-        public Indicators.OrderFlowStats OrderFlowStats(int volumetricPeriod, BarsPeriodType volumetricBarsType, int ticksPerLevel, float textSize, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
-        {
-            return indicator.OrderFlowStats(Input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
-        }
+	public partial class Strategy : NinjaTrader.Gui.NinjaScript.StrategyRenderBase
+	{
+		public Indicators.OrderFlowStats OrderFlowStats(int volumetricPeriod, BarTypeOptions volumetricBarsType, int ticksPerLevel, float textSize, bool showPriceDeltaBar, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, bool showPoc, Brush pocColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
+		{
+			return indicator.OrderFlowStats(Input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, showPriceDeltaBar, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, showPoc, pocColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
+		}
 
-        public Indicators.OrderFlowStats OrderFlowStats(ISeries<double> input, int volumetricPeriod, BarsPeriodType volumetricBarsType, int ticksPerLevel, float textSize, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
-        {
-            return indicator.OrderFlowStats(input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
-        }
-    }
+		public Indicators.OrderFlowStats OrderFlowStats(ISeries<double> input , int volumetricPeriod, BarTypeOptions volumetricBarsType, int ticksPerLevel, float textSize, bool showPriceDeltaBar, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, bool showPoc, Brush pocColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
+		{
+			return indicator.OrderFlowStats(input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, showPriceDeltaBar, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, showPoc, pocColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
+		}
+	}
 }
 
 #endregion
