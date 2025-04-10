@@ -304,7 +304,7 @@ namespace NinjaTrader.NinjaScript.Indicators
             var line = Draw.Line(this, "Line" + CurrentBar, false, startTime, pocPrice, endTime, pocPrice, Brushes.Yellow, DashStyleHelper.Solid, 2);
             if (line != null)
             {
-                line.ZOrder = 1;
+                line.ZOrder = 100;
             }
         }
 
@@ -545,55 +545,55 @@ namespace NinjaTrader.NinjaScript.Indicators
 
 namespace NinjaTrader.NinjaScript.Indicators
 {
-	public partial class Indicator : NinjaTrader.Gui.NinjaScript.IndicatorRenderBase
-	{
-		private OrderFlowStats[] cacheOrderFlowStats;
-		public OrderFlowStats OrderFlowStats(int volumetricPeriod, BarsPeriodType volumetricBarsType, int ticksPerLevel, float textSize, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
-		{
-			return OrderFlowStats(Input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
-		}
+    public partial class Indicator : NinjaTrader.Gui.NinjaScript.IndicatorRenderBase
+    {
+        private OrderFlowStats[] cacheOrderFlowStats;
+        public OrderFlowStats OrderFlowStats(int volumetricPeriod, BarsPeriodType volumetricBarsType, int ticksPerLevel, float textSize, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
+        {
+            return OrderFlowStats(Input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
+        }
 
-		public OrderFlowStats OrderFlowStats(ISeries<double> input, int volumetricPeriod, BarsPeriodType volumetricBarsType, int ticksPerLevel, float textSize, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
-		{
-			if (cacheOrderFlowStats != null)
-				for (int idx = 0; idx < cacheOrderFlowStats.Length; idx++)
-					if (cacheOrderFlowStats[idx] != null && cacheOrderFlowStats[idx].VolumetricPeriod == volumetricPeriod && cacheOrderFlowStats[idx].VolumetricBarsType == volumetricBarsType && cacheOrderFlowStats[idx].TicksPerLevel == ticksPerLevel && cacheOrderFlowStats[idx].TextSize == textSize && cacheOrderFlowStats[idx].BullBarNegDeltaColor == bullBarNegDeltaColor && cacheOrderFlowStats[idx].BearBarPosDeltaColor == bearBarPosDeltaColor && cacheOrderFlowStats[idx].DeltaBarOutlineColor == deltaBarOutlineColor && cacheOrderFlowStats[idx].TableDisplayMode == tableDisplayMode && cacheOrderFlowStats[idx].MaxTableColumns == maxTableColumns && cacheOrderFlowStats[idx].TableBgColor == tableBgColor && cacheOrderFlowStats[idx].TableLabelColor == tableLabelColor && cacheOrderFlowStats[idx].PositiveTextColor == positiveTextColor && cacheOrderFlowStats[idx].NegativeTextColor == negativeTextColor && cacheOrderFlowStats[idx].VolumeTextColor == volumeTextColor && cacheOrderFlowStats[idx].MinDeltaTextColor == minDeltaTextColor && cacheOrderFlowStats[idx].MaxDeltaTextColor == maxDeltaTextColor && cacheOrderFlowStats[idx].EqualsInput(input))
-						return cacheOrderFlowStats[idx];
-			return CacheIndicator<OrderFlowStats>(new OrderFlowStats(){ VolumetricPeriod = volumetricPeriod, VolumetricBarsType = volumetricBarsType, TicksPerLevel = ticksPerLevel, TextSize = textSize, BullBarNegDeltaColor = bullBarNegDeltaColor, BearBarPosDeltaColor = bearBarPosDeltaColor, DeltaBarOutlineColor = deltaBarOutlineColor, TableDisplayMode = tableDisplayMode, MaxTableColumns = maxTableColumns, TableBgColor = tableBgColor, TableLabelColor = tableLabelColor, PositiveTextColor = positiveTextColor, NegativeTextColor = negativeTextColor, VolumeTextColor = volumeTextColor, MinDeltaTextColor = minDeltaTextColor, MaxDeltaTextColor = maxDeltaTextColor }, input, ref cacheOrderFlowStats);
-		}
-	}
+        public OrderFlowStats OrderFlowStats(ISeries<double> input, int volumetricPeriod, BarsPeriodType volumetricBarsType, int ticksPerLevel, float textSize, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
+        {
+            if (cacheOrderFlowStats != null)
+                for (int idx = 0; idx < cacheOrderFlowStats.Length; idx++)
+                    if (cacheOrderFlowStats[idx] != null && cacheOrderFlowStats[idx].VolumetricPeriod == volumetricPeriod && cacheOrderFlowStats[idx].VolumetricBarsType == volumetricBarsType && cacheOrderFlowStats[idx].TicksPerLevel == ticksPerLevel && cacheOrderFlowStats[idx].TextSize == textSize && cacheOrderFlowStats[idx].BullBarNegDeltaColor == bullBarNegDeltaColor && cacheOrderFlowStats[idx].BearBarPosDeltaColor == bearBarPosDeltaColor && cacheOrderFlowStats[idx].DeltaBarOutlineColor == deltaBarOutlineColor && cacheOrderFlowStats[idx].TableDisplayMode == tableDisplayMode && cacheOrderFlowStats[idx].MaxTableColumns == maxTableColumns && cacheOrderFlowStats[idx].TableBgColor == tableBgColor && cacheOrderFlowStats[idx].TableLabelColor == tableLabelColor && cacheOrderFlowStats[idx].PositiveTextColor == positiveTextColor && cacheOrderFlowStats[idx].NegativeTextColor == negativeTextColor && cacheOrderFlowStats[idx].VolumeTextColor == volumeTextColor && cacheOrderFlowStats[idx].MinDeltaTextColor == minDeltaTextColor && cacheOrderFlowStats[idx].MaxDeltaTextColor == maxDeltaTextColor && cacheOrderFlowStats[idx].EqualsInput(input))
+                        return cacheOrderFlowStats[idx];
+            return CacheIndicator<OrderFlowStats>(new OrderFlowStats() { VolumetricPeriod = volumetricPeriod, VolumetricBarsType = volumetricBarsType, TicksPerLevel = ticksPerLevel, TextSize = textSize, BullBarNegDeltaColor = bullBarNegDeltaColor, BearBarPosDeltaColor = bearBarPosDeltaColor, DeltaBarOutlineColor = deltaBarOutlineColor, TableDisplayMode = tableDisplayMode, MaxTableColumns = maxTableColumns, TableBgColor = tableBgColor, TableLabelColor = tableLabelColor, PositiveTextColor = positiveTextColor, NegativeTextColor = negativeTextColor, VolumeTextColor = volumeTextColor, MinDeltaTextColor = minDeltaTextColor, MaxDeltaTextColor = maxDeltaTextColor }, input, ref cacheOrderFlowStats);
+        }
+    }
 }
 
 namespace NinjaTrader.NinjaScript.MarketAnalyzerColumns
 {
-	public partial class MarketAnalyzerColumn : MarketAnalyzerColumnBase
-	{
-		public Indicators.OrderFlowStats OrderFlowStats(int volumetricPeriod, BarsPeriodType volumetricBarsType, int ticksPerLevel, float textSize, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
-		{
-			return indicator.OrderFlowStats(Input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
-		}
+    public partial class MarketAnalyzerColumn : MarketAnalyzerColumnBase
+    {
+        public Indicators.OrderFlowStats OrderFlowStats(int volumetricPeriod, BarsPeriodType volumetricBarsType, int ticksPerLevel, float textSize, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
+        {
+            return indicator.OrderFlowStats(Input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
+        }
 
-		public Indicators.OrderFlowStats OrderFlowStats(ISeries<double> input , int volumetricPeriod, BarsPeriodType volumetricBarsType, int ticksPerLevel, float textSize, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
-		{
-			return indicator.OrderFlowStats(input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
-		}
-	}
+        public Indicators.OrderFlowStats OrderFlowStats(ISeries<double> input, int volumetricPeriod, BarsPeriodType volumetricBarsType, int ticksPerLevel, float textSize, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
+        {
+            return indicator.OrderFlowStats(input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
+        }
+    }
 }
 
 namespace NinjaTrader.NinjaScript.Strategies
 {
-	public partial class Strategy : NinjaTrader.Gui.NinjaScript.StrategyRenderBase
-	{
-		public Indicators.OrderFlowStats OrderFlowStats(int volumetricPeriod, BarsPeriodType volumetricBarsType, int ticksPerLevel, float textSize, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
-		{
-			return indicator.OrderFlowStats(Input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
-		}
+    public partial class Strategy : NinjaTrader.Gui.NinjaScript.StrategyRenderBase
+    {
+        public Indicators.OrderFlowStats OrderFlowStats(int volumetricPeriod, BarsPeriodType volumetricBarsType, int ticksPerLevel, float textSize, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
+        {
+            return indicator.OrderFlowStats(Input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
+        }
 
-		public Indicators.OrderFlowStats OrderFlowStats(ISeries<double> input , int volumetricPeriod, BarsPeriodType volumetricBarsType, int ticksPerLevel, float textSize, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
-		{
-			return indicator.OrderFlowStats(input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
-		}
-	}
+        public Indicators.OrderFlowStats OrderFlowStats(ISeries<double> input, int volumetricPeriod, BarsPeriodType volumetricBarsType, int ticksPerLevel, float textSize, Brush bullBarNegDeltaColor, Brush bearBarPosDeltaColor, Brush deltaBarOutlineColor, TableDisplayModeType tableDisplayMode, int maxTableColumns, Brush tableBgColor, Brush tableLabelColor, Brush positiveTextColor, Brush negativeTextColor, Brush volumeTextColor, Brush minDeltaTextColor, Brush maxDeltaTextColor)
+        {
+            return indicator.OrderFlowStats(input, volumetricPeriod, volumetricBarsType, ticksPerLevel, textSize, bullBarNegDeltaColor, bearBarPosDeltaColor, deltaBarOutlineColor, tableDisplayMode, maxTableColumns, tableBgColor, tableLabelColor, positiveTextColor, negativeTextColor, volumeTextColor, minDeltaTextColor, maxDeltaTextColor);
+        }
+    }
 }
 
 #endregion
