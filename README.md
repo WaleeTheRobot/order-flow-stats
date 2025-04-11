@@ -17,3 +17,5 @@ Features:
 - Painted bullish/negative delta and bearish/positive delta bars to indicate a divergence in delta and price.
 
 Add-On Download: https://github.com/WaleeTheRobot/order-flow-stats/releases
+
+NinjaTrader Ecosystem: https://ninjatraderecosystem.com/user-app-share-download/order-flow-stats
