@@ -4,7 +4,7 @@
 
 **Requires the lifetime NinjaTrader license for the volumetric data or the Order Flow + subscription.**
 
-**_Important:_** The Volumetric Period, Volumetric Bars Type and Ticks Per Level must match the one on the chart.
+**Important:** The Volumetric Period, Volumetric Bars Type and Ticks Per Level must match the one on the chart.
 
 Normal volumetric charts have wide bars with additional data that limits the number of bars you can have on your chart. This displays some of the statistics on non-volumetric charts using the volumetric data series.
 
