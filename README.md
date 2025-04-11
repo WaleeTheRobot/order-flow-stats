@@ -15,3 +15,5 @@ Features:
 - Customizable colors. Customizable colors for increasing and decreasing delta, min delta and max delta
 - Point of Control per bar
 - Painted bullish/negative delta and bearish/positive delta bars to indicate a divergence in delta and price.
+
+Add-On Download: https://github.com/WaleeTheRobot/order-flow-stats/releases
