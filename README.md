@@ -1,6 +1,6 @@
 # Order Flow Stats
 
-<img src="./screenshot.png" alt="TrustMeBro" style="display: block; margin: 0 auto">
+<img src="./screenshot.png" alt="OrderFlowStats" style="display: block; margin: 0 auto">
 
 **Requires the lifetime NinjaTrader license for the volumetric data or the Order Flow + subscription.**
 
