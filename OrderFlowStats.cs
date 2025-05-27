@@ -3,7 +3,7 @@ using NinjaTrader.Data;
 using NinjaTrader.Gui;
 using NinjaTrader.Gui.Chart;
 using NinjaTrader.NinjaScript.BarsTypes;
-using NinjaTrader.NinjaScript.Indicators;
+using OrderFlowStats;
 using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -11,7 +11,7 @@ using System.Windows.Media;
 using System.Xml.Serialization;
 #endregion
 
-namespace NinjaTrader.NinjaScript.Indicators
+namespace OrderFlowStats
 {
     public enum BarTypeOptions
     {
@@ -28,7 +28,10 @@ namespace NinjaTrader.NinjaScript.Indicators
         ShowLast,
         PerBar
     }
+}
 
+namespace NinjaTrader.NinjaScript.Indicators
+{
     public class OrderFlowStats : Indicator
     {
         public const string GROUP_NAME_GENERAL = "1. General";
